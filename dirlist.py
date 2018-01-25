@@ -59,7 +59,7 @@ def parseapacheindex(index):
 
 def parsepreindex(index):
     index = re.search(r'<pre>(<a href="../">../|.*">Parent Directory)</a>((\r|\n|.)*)</pre>', index, re.MULTILINE).group(2)
-    files_and_folders = [x for x in re.findall(r'<a href="[^"]+">([^<]+)</a> +([a-zA-Z0-9\-: ]*?) {2,}([0-9\-]*)', index, re.MULTILINE)]
+    files_and_folders = [x for x in re.findall(r'<a href="[^"]+">([^<]+)</a> +([a-zA-Z0-9\-: ]*?) {2,}([0-9\-.]*[KGM]?)', index, re.MULTILINE)]
     result = []
     for f in files_and_folders:
         st_mode = 33024
