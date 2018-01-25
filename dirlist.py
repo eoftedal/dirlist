@@ -31,10 +31,10 @@ def tosize(vs):
     return int(vs)
 
 def parseindex(index):
-    if ('Apache/' in index or '<hr></th></tr>' in index):
+    if ('<hr></th></tr>' in index):
         return parseapacheindex(index)
-    if ('<hr><pre><a ' in index):
-        return parsenginxindex(index)
+    if ('<hr><pre><a ' in index or '<pre><img' in index):
+        return parsepreindex(index)
     raise FuseOSError(errno.EACCES)
 
 def parseapacheindex(index):
@@ -57,8 +57,8 @@ def parseapacheindex(index):
         result.append(dict(name=name, attrs=dict(st_mode=st_mode, st_ctime=dt, st_mtime=dt, st_atime=dt, st_nlink=st_nlink, st_size=size)))
     return result
 
-def parsenginxindex(index):
-    index = re.search(r'<pre><a href="../">../</a>((\r|\n|.)*)</pre>', index, re.MULTILINE).group()
+def parsepreindex(index):
+    index = re.search(r'<pre>(<a href="../">../|.*">Parent Directory)</a>((\r|\n|.)*)</pre>', index, re.MULTILINE).group(2)
     files_and_folders = [x for x in re.findall(r'<a href="[^"]+">([^<]+)</a> +([a-zA-Z0-9\-: ]*?) {2,}([0-9\-]*)', index, re.MULTILINE)]
     result = []
     for f in files_and_folders:
