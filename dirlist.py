@@ -110,13 +110,15 @@ class Xxe(LoggingMixIn, Operations):
         raise FuseOSError(errno.EACCES)
 
     def read(self, path, size, offset, fh):
-        headers = { 'Range': "bytes=" + str(offset) + "-" + str(offset+size), }
+        headers = { 'Range': "bytes=" + str(offset) + "-" + str(offset+size-1), }
         req = urllib2.Request(self.uri + path, None, headers)
         resp = urllib2.urlopen(req)
         if (resp.getcode() != 206):
+            if (resp.getcode() == 416):
+                return ""
             raise FuseOSError(errno.EACCES)
-        # contl = int(resp.info().getheader('content-length'))
-        return resp.read(size)
+        contl = int(resp.info().getheader('content-length'))
+        return resp.read(contl)
 
     def readdir(self, path, fh):
         response = urllib2.urlopen(self.uri + path) 
