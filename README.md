@@ -1,7 +1,7 @@
 DirList
 -------
 
-A fuse file system driver for nginx and apache directory indexes.
+A fuse file system driver for mounting nginx and apache directory indexes as folders.
 
 How to use
 ----------
@@ -15,12 +15,8 @@ vagrant up
 vagrant ssh
 sudo bash
 
-python dirlist.py https://nginx.org/packages/ mount
-```
-And then from a second shell:
-```
-vagrant ssh
-sudo bash
+nohup python dirlist.py https://nginx.org/packages/ mount 2>&1 > nohup.out &
+
 cd mount
 ls
 ```
