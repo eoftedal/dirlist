@@ -38,7 +38,7 @@ def parseindex(index):
     raise FuseOSError(errno.EACCES)
 
 def parseapacheindex(index):
-    files_and_folders = [x for x in re.findall(r'<tr>.*?alt="([^"]+)".*?<td><a href="[^"]+">([^<]+).*?<td[^>]*>([^<&]*).*?<td[^>]*>([0-9.KMG]*)', index, re.MULTILINE) if x[0] != "[PARENTDIR]"]
+    files_and_folders = [x for x in re.findall(r'<tr>.*?alt="([^"]+)".*?<td><a href="[^"]+">([^<]+).*?<td[^>]*>([^<&]*).*?<td[^>]*> *([0-9.KMG]*)', index, re.MULTILINE) if x[0] != "[PARENTDIR]"]
     result = []
     for f in files_and_folders:
         print(f)
@@ -115,8 +115,8 @@ class Xxe(LoggingMixIn, Operations):
         resp = urllib2.urlopen(req)
         if (resp.getcode() != 206):
             raise FuseOSError(errno.EACCES)
-        contl = int(resp.info().getheader('content-length'))
-        return resp.read(contl)
+        # contl = int(resp.info().getheader('content-length'))
+        return resp.read(size)
 
     def readdir(self, path, fh):
         response = urllib2.urlopen(self.uri + path) 
