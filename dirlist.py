@@ -21,7 +21,10 @@ sys.setdefaultencoding('utf8')
 
 
 def tosize(vs):
+    if (vs == "" or vs == "-"):
+        return 0
     # For shortened file sizes we need to ensure the reported size is >= actual size
+    # to avoid copy operations truncating the downloaded file
     if (vs.endswith("K")):
         return int( (float(vs.replace("K", ""))+0.1)*1024 )
     if (vs.endswith("M")):
@@ -30,31 +33,59 @@ def tosize(vs):
         return int( (float(vs.replace("G", ""))+0.1)*1024*1024*1024 )
     return int(vs)
 
+def todate(dt):
+    d = now
+    if (dt.strip() != "" and dt.strip() != "-"):
+        d = int(mktime(parser.parse(dt.strip()).timetuple()))
+    return d
+
 def parseindex(index):
+    files = parseindextofiles(index)
+    print(files)
+    return [dict(
+        name=f["filename"],
+        attrs=dict(
+            st_mode=(S_IFDIR | 0o500) if f["dir"] else 33024,
+            st_ctime=f["date"],
+            st_mtime=f["date"],
+            st_atime=f["date"],
+            st_nlink=2 if f["dir"] else 1,
+            st_size=f["size"],
+        ),
+    ) for f in files]
+
+def parseindextofiles(index):
     if ('<hr></th></tr>' in index):
         return parseapacheindex(index)
+    if ('<tbody><tr><td><a href="../">Parent directory/</a></td><td>-</td><td>-</td></tr>' in index):
+        return parsenginxfancyindex(index)
     if ('<hr><pre><a ' in index or '<pre><img' in index):
         return parsepreindex(index)
     raise FuseOSError(errno.EACCES)
+
+def parsenginxfancyindex(index):
+    index = re.search(r'<tbody><tr><td><a href="../">Parent directory/</a></td><td>-</td><td>-</td></tr>((\r|\n|.)*)</tbody>', index, re.MULTILINE).group(1)
+    # <tr><td><a href="rall/">rall/</a></td><td>-</td><td>27-Jan-2018 20:47</td></tr>
+    files_and_folders = [x for x in re.findall(r'<tr><td><a href="[^"]+">([^<]+)</a></td><td>([^<]+)</td><td>([^<]+)</td></tr>', index, re.MULTILINE) if x[0] != "[PARENTDIR]"]
+    result = []
+    for f in files_and_folders:
+        dir = True if f[0].endswith("/") else False
+        date = todate(f[2])
+        size = tosize(f[1].strip())
+        name = f[0].decode('utf-8').encode('utf-8').replace("/","")
+        result.append(dict(filename=name, dir=dir, size=size, date=date))
+    return result
+
 
 def parseapacheindex(index):
     files_and_folders = [x for x in re.findall(r'<tr>.*?alt="([^"]+)".*?<td><a href="[^"]+">([^<]+).*?<td[^>]*>([^<&]*).*?<td[^>]*> *([0-9.KMG]*)', index, re.MULTILINE) if x[0] != "[PARENTDIR]"]
     result = []
     for f in files_and_folders:
-        print(f)
-        st_mode = 33024
-        st_nlink = 1
-        if (f[0] == "[DIR]"):
-            st_mode = S_IFDIR | 0o500
-            st_nlink = 2
-        dt = now
-        if (f[2].strip() != "-" and f[2].strip() != ""):
-            dt = int(mktime(parser.parse(f[2].strip()).timetuple()))
-        size = 0
-        if (f[3].strip() != ""):
-            size = tosize(f[3].strip())
+        dir = True if (f[0] == "[DIR]") else False
+        date = todate(f[2])
+        size = tosize(f[3].strip())
         name = f[1].decode('utf-8').encode('utf-8').replace("/","")
-        result.append(dict(name=name, attrs=dict(st_mode=st_mode, st_ctime=dt, st_mtime=dt, st_atime=dt, st_nlink=st_nlink, st_size=size)))
+        result.append(dict(filename=name, dir=dir, size=size, date=date))
     return result
 
 def parsepreindex(index):
@@ -62,24 +93,16 @@ def parsepreindex(index):
     files_and_folders = [x for x in re.findall(r'<a href="[^"]+">([^<]+)</a> +([a-zA-Z0-9\-: ]*?) {2,}([0-9\-.]*[KGM]?)', index, re.MULTILINE)]
     result = []
     for f in files_and_folders:
-        st_mode = 33024
-        st_nlink = 1
-        if (f[2] == "-" or f[0].endswith("/")):
-            st_mode = S_IFDIR | 0o500
-            st_nlink = 2
-        dt = now
-        if (f[1].strip() != "-" and f[1].strip() != ""):
-            dt = int(mktime(parser.parse(f[1].strip()).timetuple()))
-        size = 0
-        if (f[2].strip() != '' and f[2].strip() != '-'):
-            size = tosize(f[2].strip())
+        dir = True if (f[2] == "-" or f[0].endswith("/")) else False
+        date = todate(f[1])
+        size = tosize(f[2].strip())
         name = f[0].decode('utf-8').encode('utf-8').replace("/","")
-        result.append(dict(name=name, attrs=dict(st_mode=st_mode, st_ctime=dt, st_mtime=dt, st_atime=dt, st_nlink=st_nlink, st_size=size)))
+        result.append(dict(filename=name, dir=dir, size=size, date=date))
     return result
 
 now = time()
 
-class Xxe(LoggingMixIn, Operations):
+class DirList(LoggingMixIn, Operations):
 
     def create_ino(self):
         self.ino += 1
@@ -121,6 +144,7 @@ class Xxe(LoggingMixIn, Operations):
         return resp.read(contl)
 
     def readdir(self, path, fh):
+        print(self.uri + path)
         response = urllib2.urlopen(self.uri + path) 
         if (response.getcode() != 200):
             raise FuseOSError(errno.EACCES)
@@ -166,4 +190,4 @@ if __name__ == '__main__':
 
     logging.basicConfig(level=logging.DEBUG)
 
-    fuse = FUSE(Xxe(argv[1]), argv[2], foreground=True, nothreads=True)
+    fuse = FUSE(DirList(argv[1]), argv[2], foreground=True, nothreads=True)
