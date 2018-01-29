@@ -6,7 +6,7 @@ A fuse file system driver for mounting nginx and apache directory indexes as fol
 ## How to use
 
 
-### Vagrant
+### With vagrant
 
 Prerequisites: vagrant + virtualbox/vmware
 
@@ -26,7 +26,7 @@ ls
 ### Without vagrant
 
 Prequisites:
-* Install python, python-pip and libfuse2
+* Install python, python-pip and libfuse2 (with apt-get or similar)
 
 ```
 git clone https://github.com/eoftedal/dirlist.git
