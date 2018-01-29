@@ -26,7 +26,7 @@ ls
 ### Without vagrant
 
 Prequisites:
-* Install python, python-pip and libfuse2 (with apt-get or similar)
+* Install `python`, `python-pip` and `libfuse2` (with `apt-get` or similar)
 
 ```
 git clone https://github.com/eoftedal/dirlist.git
