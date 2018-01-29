@@ -5,6 +5,9 @@ A fuse file system driver for mounting nginx and apache directory indexes as fol
 
 ## How to use
 
+
+### Vagrant
+
 Prerequisites: vagrant + virtualbox/vmware
 
 ```
@@ -13,6 +16,24 @@ cd dirlist
 vagrant up
 vagrant ssh
 sudo bash
+
+nohup python dirlist.py <uri> mount 2>&1 > nohup.out &
+
+cd mount
+ls
+```
+
+### Without vagrant
+
+Prequisites:
+* Install python, python-pip and libfuse2
+
+```
+git clone https://github.com/eoftedal/dirlist.git
+cd dirlist
+pip install fusepy
+pip install python-dateutil
+mkdir mount
 
 nohup python dirlist.py <uri> mount 2>&1 > nohup.out &
 
