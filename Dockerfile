@@ -9,6 +9,6 @@ RUN pip install fusepy && \
 RUN mkdir -p /app/dirlist
 WORKDIR /app/dirlist
 
-COPY . /app/dirlist
+COPY dirlist.py /app/dirlist
 
 RUN mkdir mount
