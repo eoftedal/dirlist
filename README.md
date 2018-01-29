@@ -31,7 +31,7 @@ Prerequisites: docker installed and running
 git clone https://github.com/eoftedal/dirlist.git
 cd dirlist
 docker build . -t dirlist
-docker run --device=/dev/fuse --cap-add SYS_ADMIN -i -t -v $(pwd):/app/dirlist dirlist /bin/bash
+docker run --device=/dev/fuse --cap-add SYS_ADMIN -i -t dirlist /bin/bash
 nohup python dirlist.py <uri> mount 2>&1 > nohup.out &
 
 cd mount
